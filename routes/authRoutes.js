@@ -44,8 +44,10 @@ router.post(
         // Check for Mongoose validation errors
         if (error.name === 'ValidationError') {
           const messages = Object.values(error.errors).map((val) => val.message);
+          console.log("Type of next (ValidationError):", typeof next, next);
           return next(new Error(`Validation Error: ${messages.join(', ')}`));
         } else {
+          console.log("Type of next (Generic Error):", typeof next, next);
           return next(error);
         }
       }
