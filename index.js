@@ -29,6 +29,7 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/products", productRoutes);
+console.log("Auth routes mounted at /api/auth");
 app.use("/api/auth", authRoutes);
 app.use("/api/orders", orderRoutes);
 
