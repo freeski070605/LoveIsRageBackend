@@ -11,11 +11,9 @@ const router = express.Router();
 router.post(
   '/register',
   asyncHandler(async (req, res, next) => {
-      console.log('Register endpoint - Request body:', req.body);
       const { name, email, password } = req.body;
   
       const userExists = await User.findOne({ email });
-      console.log('Register endpoint - User exists check:', userExists);
   
       if (userExists) {
         res.status(400);
@@ -30,7 +28,6 @@ router.post(
         });
   
         if (user) {
-          console.log('Register endpoint - User created:', user);
           res.status(201).json({
             _id: user._id,
             name: user.name,
@@ -43,17 +40,12 @@ router.post(
           throw new Error('Invalid user data provided during registration');
         }
       } catch (error) {
-        console.error('Register endpoint - User creation failed. Error name:', error.name, 'Error message:', error.message);
         res.status(400);
         // Check for Mongoose validation errors
         if (error.name === 'ValidationError') {
           const messages = Object.values(error.errors).map((val) => val.message);
-          console.error('Register endpoint - Validation Error details:', messages);
           return next(new Error(`Validation Error: ${messages.join(', ')}`));
-        } else if (error.code === 11000) { // Duplicate key error code
-          console.error('Register endpoint - Duplicate key error:', error.keyValue);
-          return next(new Error(`Duplicate field value: ${JSON.stringify(error.keyValue)} already exists`));
-        }else {
+        } else {
           return next(error);
         }
       }
