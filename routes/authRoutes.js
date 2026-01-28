@@ -8,6 +8,7 @@ const router = express.Router();
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
+console.log("Type of asyncHandler at top of file:", typeof asyncHandler);
 router.post(
   '/register',
   asyncHandler(async (req, res, next) => {
