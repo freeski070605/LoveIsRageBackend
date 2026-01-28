@@ -43,13 +43,17 @@ router.post(
           throw new Error('Invalid user data provided during registration');
         }
       } catch (error) {
-        console.error('Register endpoint - User creation failed:', error.message);
+        console.error('Register endpoint - User creation failed. Error name:', error.name, 'Error message:', error.message);
         res.status(400);
         // Check for Mongoose validation errors
         if (error.name === 'ValidationError') {
           const messages = Object.values(error.errors).map((val) => val.message);
+          console.error('Register endpoint - Validation Error details:', messages);
           return next(new Error(`Validation Error: ${messages.join(', ')}`));
-        } else {
+        } else if (error.code === 11000) { // Duplicate key error code
+          console.error('Register endpoint - Duplicate key error:', error.keyValue);
+          return next(new Error(`Duplicate field value: ${JSON.stringify(error.keyValue)} already exists`));
+        }else {
           return next(error);
         }
       }
