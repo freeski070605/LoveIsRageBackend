@@ -11,7 +11,7 @@ const router = express.Router();
 router.post(
   '/register',
   asyncHandler(async (req, res, next) => {
-      const { name, email, password } = req.body;
+      const { Username, email, password } = req.body;
   
       const userExists = await User.findOne({ email });
   
@@ -22,7 +22,7 @@ router.post(
   
       try {
         const user = await User.create({
-          name,
+          Username,
           email,
           password,
         });
@@ -30,7 +30,7 @@ router.post(
         if (user) {
           res.status(201).json({
             _id: user._id,
-            name: user.name,
+            Username: user.Username,
             email: user.email,
             isAdmin: user.isAdmin,
             token: generateToken(user._id),
@@ -65,7 +65,7 @@ router.post(
     if (user && (await user.matchPassword(password))) {
       res.json({
         _id: user._id,
-        name: user.name,
+        Username: user.Username,
         email: user.email,
         isAdmin: user.isAdmin,
         token: generateToken(user._id),
