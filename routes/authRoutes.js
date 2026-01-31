@@ -1,5 +1,6 @@
 import express from 'express';
 import asyncHandler from 'express-async-handler';
+import { protect } from '../middleware/auth.js';
 import User from '../models/User.js';
 import jwt from 'jsonwebtoken';
 
@@ -76,6 +77,86 @@ router.post(
     }
   })
 );
+
+// @desc    Get user profile
+// @route   GET /api/auth/profile
+// @access  Private
+router.get(
+  '/profile',
+  protect,
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id).select('-password');
+
+    if (user) {
+      res.json({
+        _id: user._id,
+        username: user.username,
+        email: user.email,
+        isAdmin: user.isAdmin,
+      });
+    } else {
+      res.status(404);
+      throw new Error('User not found');
+    }
+  })
+);
+
+// @desc    Update user profile
+// @route   PUT /api/auth/profile
+// @access  Private
+router.put(
+  '/profile',
+  protect,
+  asyncHandler(async (req, res) => {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+      user.username = req.body.username || user.username;
+      user.email = req.body.email || user.email;
+
+      const updatedUser = await user.save();
+
+      res.json({
+        _id: updatedUser._id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        isAdmin: updatedUser.isAdmin,
+      });
+    } else {
+      res.status(404);
+      throw new Error('User not found');
+    }
+  })
+);
+
+// @desc    Update user password
+// @route   PUT /api/auth/password
+// @access  Private
+router.put(
+  '/password',
+  protect,
+  asyncHandler(async (req, res) => {
+    const { currentPassword, newPassword } = req.body;
+
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+      if (!(await user.matchPassword(currentPassword))) {
+        res.status(401);
+        throw new Error('Invalid current password');
+      }
+
+      user.password = newPassword; // Mongoose pre-save hook will hash this
+      await user.save();
+
+      res.json({ message: 'Password updated successfully' });
+    } else {
+      res.status(404);
+      throw new Error('User not found');
+    }
+  })
+);
+
 
 // Generate JWT
 const generateToken = (id) => {
