@@ -1,6 +1,6 @@
 import express from 'express';
 import asyncHandler from 'express-async-handler';
-import { protect } from '../middleware/auth.js'; // Import protect middleware
+import { protect, admin } from '../middleware/auth.js'; // Import protect and admin middleware
 import Order from '../models/Order.js';
 
 const router = express.Router();
@@ -60,6 +60,21 @@ router.get(
       'username email'
     ).populate('products.productId', 'name price'); // Populate user info and product details
 
+    res.json(orders);
+  })
+);
+
+// @desc    Get all orders
+// @route   GET /api/orders
+// @access  Private/Admin
+router.get(
+  '/',
+  protect,
+  admin,
+  asyncHandler(async (req, res) => {
+    const orders = await Order.find({})
+      .populate('userId', 'username email')
+      .populate('products.productId', 'name price');
     res.json(orders);
   })
 );

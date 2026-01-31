@@ -1,6 +1,7 @@
 import express from 'express';
 import asyncHandler from 'express-async-handler';
 import Product from '../models/Product.js';
+import { protect, admin } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -64,6 +65,56 @@ router.post(
 
     const createdProduct = await product.save();
     res.status(201).json(createdProduct);
+  })
+);
+
+// @desc    Update a product
+// @route   PUT /api/products/:slug
+// @access  Private/Admin
+router.put(
+  '/:slug',
+  protect,
+  admin,
+  asyncHandler(async (req, res) => {
+    const { name, description, price, imageUrl, category, size, quantity } = req.body;
+
+    const product = await Product.findOne({ slug: req.params.slug });
+
+    if (product) {
+      product.name = name || product.name;
+      product.description = description || product.description;
+      product.price = price || product.price;
+      product.imageUrl = imageUrl || product.imageUrl;
+      product.category = category || product.category;
+      product.size = size || product.size;
+      product.quantity = quantity || product.quantity;
+
+      const updatedProduct = await product.save();
+      res.json(updatedProduct);
+    } else {
+      res.status(404);
+      throw new Error('Product not found');
+    }
+  })
+);
+
+// @desc    Delete a product
+// @route   DELETE /api/products/:slug
+// @access  Private/Admin
+router.delete(
+  '/:slug',
+  protect,
+  admin,
+  asyncHandler(async (req, res) => {
+    const product = await Product.findOne({ slug: req.params.slug });
+
+    if (product) {
+      await product.deleteOne();
+      res.json({ message: 'Product removed' });
+    } else {
+      res.status(404);
+      throw new Error('Product not found');
+    }
   })
 );
 
