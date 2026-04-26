@@ -19,6 +19,29 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  phone: {
+    type: String,
+    default: "",
+  },
+  tags: {
+    type: [String],
+    default: [],
+  },
+  notes: {
+    type: String,
+    default: "",
+  },
+  subscribedEmail: {
+    type: Boolean,
+    default: false,
+  },
+  subscribedSms: {
+    type: Boolean,
+    default: false,
+  },
+  lastPurchaseDate: {
+    type: Date,
+  },
 });
 
 // Hash password before saving the user

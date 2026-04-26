@@ -1,120 +1,111 @@
-import express from 'express';
-import asyncHandler from 'express-async-handler';
-import Product from '../models/Product.js';
-import { protect, admin } from '../middleware/auth.js';
+import express from "express";
+import asyncHandler from "express-async-handler";
+import Product from "../models/Product.js";
+import { protect, admin } from "../middleware/auth.js";
 
 const router = express.Router();
 
-// @desc    Fetch all products
-// @route   GET /api/products
-// @access  Public
+const productPayload = (body) => ({
+  name: body.name,
+  slug: body.slug,
+  description: body.description,
+  category: (body.category || "hoodie").toLowerCase(),
+  price: Number(body.price || 0),
+  images: body.images || [],
+  sizes: body.sizes || [],
+  colors: body.colors || [],
+  variants: body.variants || [],
+  active: Boolean(body.active),
+  limitedDrop: Boolean(body.limitedDrop),
+  careInstructions: body.careInstructions || "",
+  sizeGuide: body.sizeGuide || "",
+  dropId: body.dropId || undefined,
+});
+
 router.get(
-  '/',
+  "/",
   asyncHandler(async (req, res) => {
-    const products = await Product.find({});
+    const filter = {};
+
+    if (req.query.category && req.query.category !== "All") {
+      filter.category = String(req.query.category).toLowerCase();
+    }
+
+    if (req.query.isSoldOut === "true") filter.isSoldOut = true;
+    if (req.query.isSoldOut === "false") filter.isSoldOut = false;
+
+    if (req.query.admin !== "true") {
+      filter.active = true;
+    }
+
+    const products = await Product.find(filter).sort({ createdAt: -1 });
     res.json(products);
   })
 );
 
-// @desc    Fetch single product by slug
-// @route   GET /api/products/:slug
-// @access  Public
 router.get(
-  '/:slug',
+  "/:slug",
   asyncHandler(async (req, res) => {
     const product = await Product.findOne({ slug: req.params.slug });
 
-    if (product) {
-      res.json(product);
-    } else {
+    if (!product || (!product.active && req.query.admin !== "true")) {
       res.status(404);
-      throw new Error('Product not found');
+      throw new Error("Product not found");
     }
+
+    res.json(product);
   })
 );
 
-// @desc    Create a product
-// @route   POST /api/products
-// @access  Private/Admin
 router.post(
-  '/',
+  "/",
+  protect,
+  admin,
   asyncHandler(async (req, res) => {
-    // Admin middleware will be applied here
-    const { name, slug, image, brand, category, description, price, countInStock, rating, numReviews } = req.body;
-
-    const productExists = await Product.findOne({ slug });
+    const productExists = await Product.findOne({ slug: req.body.slug });
 
     if (productExists) {
       res.status(400);
-      throw new Error('Product with this slug already exists');
+      throw new Error("Product with this slug already exists");
     }
 
-    const product = new Product({
-      name: name || 'Sample name',
-      slug: slug || `sample-slug-${Date.now()}`,
-      user: req.user._id, // User from auth middleware
-      image: image || '/images/sample.jpg',
-      brand: brand || 'Sample brand',
-      category: category || 'Sample category',
-      description: description || 'Sample description',
-      price: price || 0,
-      countInStock: countInStock || 0,
-      rating: rating || 0,
-      numReviews: numReviews || 0,
-    });
-
-    const createdProduct = await product.save();
-    res.status(201).json(createdProduct);
+    const product = await Product.create(productPayload(req.body));
+    res.status(201).json(product);
   })
 );
 
-// @desc    Update a product
-// @route   PUT /api/products/:slug
-// @access  Private/Admin
 router.put(
-  '/:slug',
+  "/:slug",
   protect,
   admin,
   asyncHandler(async (req, res) => {
-    const { name, description, price, imageUrl, category, size, quantity } = req.body;
-
     const product = await Product.findOne({ slug: req.params.slug });
 
-    if (product) {
-      product.name = name || product.name;
-      product.description = description || product.description;
-      product.price = price || product.price;
-      product.imageUrl = imageUrl || product.imageUrl;
-      product.category = category || product.category;
-      product.size = size || product.size;
-      product.quantity = quantity || product.quantity;
-
-      const updatedProduct = await product.save();
-      res.json(updatedProduct);
-    } else {
+    if (!product) {
       res.status(404);
-      throw new Error('Product not found');
+      throw new Error("Product not found");
     }
+
+    Object.assign(product, productPayload({ ...product.toObject(), ...req.body }));
+    const updatedProduct = await product.save();
+    res.json(updatedProduct);
   })
 );
 
-// @desc    Delete a product
-// @route   DELETE /api/products/:slug
-// @access  Private/Admin
 router.delete(
-  '/:slug',
+  "/:slug",
   protect,
   admin,
   asyncHandler(async (req, res) => {
     const product = await Product.findOne({ slug: req.params.slug });
 
-    if (product) {
-      await product.deleteOne();
-      res.json({ message: 'Product removed' });
-    } else {
+    if (!product) {
       res.status(404);
-      throw new Error('Product not found');
+      throw new Error("Product not found");
     }
+
+    await product.deleteOne();
+    res.json({ message: "Product removed" });
   })
 );
 
